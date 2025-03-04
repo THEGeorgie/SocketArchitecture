@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#define MAXBUFLEN 100
 #define SERVERPORT "4950"	// the port users will be connecting to
 
 int main(int argc, char *argv[])
@@ -57,11 +58,21 @@ int main(int argc, char *argv[])
         perror("talker: sendto");
         exit(1);
              }
-
-
-    freeaddrinfo(servinfo);
-
     printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
+
+    struct sockaddr_storage their_addr;
+    char buf[MAXBUFLEN];
+    socklen_t addr_len;
+    printf("talker: Waiting for feedback\n");
+    if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN - 1, 0,
+                             (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+        perror("talke: recvfrom");
+        exit(1);
+    }
+
+    buf[numbytes] = '\0';
+    printf("talker: received %d bytes message %s\n", numbytes, buf);
+    freeaddrinfo(servinfo);
     close(sockfd);
 
     return 0;
