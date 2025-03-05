@@ -12,19 +12,56 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <json-c/json.h>
 
 #define MAXBUFLEN 100
 #define SERVERPORT "4950"	// the port users will be connecting to
 
-int main(int argc, char *argv[])
-{
+void create_js_paket(json_object *jobj, char verb[], const char **out) {
+    json_object_object_add(jobj, "verb", json_object_new_string(verb));
+
+    *out = json_object_to_json_string(jobj);
+}
+
+void create_js_paket_msg(json_object *jobj, char verb[], char msg[], const char **out) {
+    json_object_object_add(jobj, "verb", json_object_new_string(verb));
+    json_object_object_add(jobj, "msg", json_object_new_string(msg));
+
+    *out = json_object_to_json_string(jobj);
+}
+
+void send_packet(int sockfd, struct addrinfo *p, char *packet, int *numbytes) {
+    if ((*numbytes = sendto(sockfd, packet, strlen(packet), 0,
+                            p->ai_addr, p->ai_addrlen)) == -1) {
+        perror("client: sendto");
+        exit(1);
+    }
+    printf("client: sent %s\n", packet);
+}
+
+void recv_packet(int sockfd, struct sockaddr *server_addr, char *buffer, int *numbytes) {
+    printf("client: waiting to recvfrom...\n");
+    socklen_t addr_len = sizeof server_addr;
+    if ((*numbytes = recvfrom(sockfd, buffer, MAXBUFLEN - 1, 0,
+                            (struct sockaddr *) &server_addr, &addr_len)) == -1) {
+        perror("talke: recvfrom");
+        exit(1);
+    }
+}
+
+
+int main(int argc, char *argv[]) {
+    char *verbs[] = {"START", "READY", "TURN", "MOVE", "END"};
+    json_object *jobj = json_object_new_object();
+
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
     int rv;
     int numbytes;
+    struct sockaddr_storage server_addr;
 
     if (argc != 3) {
-        fprintf(stderr,"usage: talker hostname message\n");
+        fprintf(stderr, "usage: talker hostname message\n");
         exit(1);
     }
 
@@ -37,41 +74,29 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // loop through all the results and make a socketgai_strerror
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("talker: socket");
-            continue;
-                }
-
-        break;
-    }
-
+    p = servinfo;
     if (p == NULL) {
         fprintf(stderr, "talker: failed to create socket\n");
         return 2;
     }
-
-    if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
-             p->ai_addr, p->ai_addrlen)) == -1) {
-        perror("talker: sendto");
-        exit(1);
-             }
-    printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
-
-    struct sockaddr_storage their_addr;
-    char buf[MAXBUFLEN];
-    socklen_t addr_len;
-    printf("talker: Waiting for feedback\n");
-    if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN - 1, 0,
-                             (struct sockaddr *) &their_addr, &addr_len)) == -1) {
-        perror("talke: recvfrom");
-        exit(1);
+    if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                         p->ai_protocol)) == -1) {
+        perror("talker: socket");
+        exit(-1);
     }
 
+
+    const char *msg;
+    create_js_paket(jobj, verbs[1], &msg);
+    send_packet(sockfd, p, msg, &numbytes);
+
+    char buf[MAXBUFLEN];
+    recv_packet(sockfd, &server_addr, buf, &numbytes);
     buf[numbytes] = '\0';
-    printf("talker: received %d bytes message %s\n", numbytes, buf);
+    printf("client: received %d bytes message %s\n", numbytes, buf);
+
+
+    json_object_put(jobj);
     freeaddrinfo(servinfo);
     close(sockfd);
 

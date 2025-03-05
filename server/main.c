@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <json-c/json.h>
 
 #define MYPORT "4950"	// the port users will be connecting to
 
@@ -28,14 +29,52 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6 *) sa)->sin6_addr);
 }
 
+void create_js_paket(json_object *jobj, char verb[],  const char **out) {
+
+    json_object_object_add(jobj, "verb", json_object_new_string(verb));
+
+     *out = json_object_to_json_string(jobj);
+}
+
+void create_js_paket_msg(json_object *jobj, char verb[], char msg[], const char **out) {
+    json_object_object_add(jobj, "verb", json_object_new_string(verb));
+    json_object_object_add(jobj, "msg", json_object_new_string(msg));
+
+    *out = json_object_to_json_string(jobj);
+}
+
+void send_packet(int sockfd,struct sockaddr *client_addr, char * packet, int *numbytes) {
+    printf("listener: sending %s\n",packet);
+    socklen_t addr_len = sizeof client_addr;
+    if ((*numbytes = sendto(sockfd, packet, strlen(packet), 0,
+              (struct sockaddr *) &client_addr, addr_len)) == -1) {
+        perror("listiner: sendto");
+        exit(1);
+              }
+}
+
+void recv_packet(int sockfd,struct sockaddr * client_addr, char * buffer, int *numbytes) {
+    printf("listener: waiting to recvfrom...\n");
+    socklen_t addr_len = sizeof client_addr;
+    if ((*numbytes = recvfrom(sockfd, buffer, MAXBUFLEN - 1, 0,
+                             (struct sockaddr *) &client_addr, &addr_len)) == -1) {
+        perror("recvfrom");
+        exit(1);
+                             }
+}
+
 int main(void) {
+
+    char *verbs[] = {"START","READY", "TURN", "MOVE", "END"};
+    json_object *jobj = json_object_new_object();
+
+
     int sockfd; //socket file descriptor aka packet  retrieved
     struct addrinfo hints, *servinfo, *p; //hints saves
     int rv;
     int numbytes;
     struct sockaddr_storage their_addr;
     char buf[MAXBUFLEN];
-    socklen_t addr_len;
     char s[INET6_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints);
@@ -43,7 +82,7 @@ int main(void) {
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
 
-    if ((rv = getaddrinfo(NULL, MYPORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo("localhost", MYPORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -60,25 +99,20 @@ int main(void) {
         exit(-1);
     }
     if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-        //binds the socket to the adress
+        //binds the socket to the address
         close(sockfd);
         perror("listener: bind");
         exit(-2);
     }
 
-
-
-
-
-
     printf("listener: waiting to recvfrom...\n");
-
+    socklen_t addr_len;
     addr_len = sizeof their_addr;
     if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN - 1, 0,
                              (struct sockaddr *) &their_addr, &addr_len)) == -1) {
         perror("recvfrom");
         exit(1);
-    }
+                             }
 
     printf("listener: got packet from %s\n",
            inet_ntop(their_addr.ss_family,
@@ -94,11 +128,14 @@ int main(void) {
               (struct sockaddr *) &their_addr, addr_len)) == -1) {
         perror("listiner: sendto");
         exit(1);
-             }
+              }
+
+
 
 
     // free the memory after the interaction is done
     freeaddrinfo(servinfo);
+    json_object_put(jobj);
     close(sockfd);
 
     return 0;
