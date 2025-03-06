@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/gogo/CLionProjects/SocketArchitecture/client/main.c" "CMakeFiles/client.dir/main.c.o" "gcc" "CMakeFiles/client.dir/main.c.o.d"
+  "/home/gogo/Desktop/projects/client/main.c" "CMakeFiles/client.dir/main.c.o" "gcc" "CMakeFiles/client.dir/main.c.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

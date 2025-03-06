@@ -1,5 +1,13 @@
-/home/gogo/Desktop/clion-2024.3.4/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -S /home/gogo/CLionProjects/SocketArchitecture/server -B /home/gogo/CLionProjects/SocketArchitecture/server/cmake-build-debug
+/home/gogo/Desktop/clion-2024.3.4/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -S /home/gogo/Desktop/projects/server -B /home/gogo/Desktop/projects/server/cmake-build-debug
+-- The C compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
 -- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2")
--- Configuring done (0.0s)
+-- Checking for module 'json-c'
+--   Found json-c, version 0.15
+-- Configuring done (0.8s)
 -- Generating done (0.0s)
--- Build files have been written to: /home/gogo/CLionProjects/SocketArchitecture/server/cmake-build-debug
+-- Build files have been written to: /home/gogo/Desktop/projects/server/cmake-build-debug
